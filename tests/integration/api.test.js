@@ -149,6 +149,22 @@ describe('Seguridad', () => {
     expect(res.status).toBe(413);
   });
 
+  test('GET /api/salud informa si la base responde', async () => {
+    const sinBase = await request(app).get('/api/salud');
+    expect(sinBase.body).toMatchObject({ estado: 'ok', baseDeDatos: 'no configurada' });
+
+    const conBase = crearApp(e.contenedor, { activarLimites: false, verificarBaseDeDatos: async () => {} });
+    expect((await request(conBase).get('/api/salud')).body.baseDeDatos).toBe('conectada');
+
+    const caida = crearApp(e.contenedor, {
+      activarLimites: false,
+      verificarBaseDeDatos: async () => {
+        throw new Error('sin conexión');
+      },
+    });
+    expect((await request(caida).get('/api/salud')).status).toBe(503);
+  });
+
   test('ruta inexistente -> 404', async () => {
     const res = await request(app).get('/api/no-existe');
     expect(res.status).toBe(404);

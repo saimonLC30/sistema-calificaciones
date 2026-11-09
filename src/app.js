@@ -32,6 +32,7 @@ const crearApp = (
     activarLimites = true, // rate limiting (en los tests se apaga)
     limiteIntentosLogin = 10, // intentos FALLIDOS de login por IP cada 15 minutos
     limitePeticiones = 300, // peticiones por IP cada 15 minutos
+    verificarBaseDeDatos = null, // función async que hace "ping" a la base (la pasa server.js)
   } = {}
 ) => {
   const app = express();
@@ -68,6 +69,18 @@ const crearApp = (
   const middlewaresAuth = crearMiddlewaresAuth(contenedor.auth.autenticarToken);
 
   app.get('/', (req, res) => res.json({ message: 'API de calificaciones funcionando' }));
+
+  // Chequeo de salud: ¿la API responde y la base de datos está conectada?
+  // (idea tomada del /test-db de los ejemplos de la materia, Clase 06)
+  app.get('/api/salud', async (req, res) => {
+    if (!verificarBaseDeDatos) return res.json({ estado: 'ok', baseDeDatos: 'no configurada' });
+    try {
+      await verificarBaseDeDatos();
+      res.json({ estado: 'ok', baseDeDatos: 'conectada' });
+    } catch (error) {
+      res.status(503).json({ estado: 'error', baseDeDatos: 'sin conexión', detalle: error.message });
+    }
+  });
 
   app.use('/api/auth', crearAuthRoutes(crearAuthController(contenedor.auth), middlewaresAuth));
   app.use('/api/usuarios', crearUsuarioRoutes(crearUsuarioController(contenedor.usuarios), middlewaresAuth));

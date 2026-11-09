@@ -1,5 +1,6 @@
 // Punto de entrada: arma todo con las piezas "reales" (MongoDB, bcrypt, JWT) y levanta el servidor.
 require('dotenv').config();
+const mongoose = require('mongoose');
 const crearApp = require('./app');
 const connectDB = require('./config/db');
 const { crearContenedorMongo } = require('./container');
@@ -20,7 +21,11 @@ const iniciar = async () => {
 
   await connectDB(process.env.MONGO_URI);
 
-  const app = crearApp(contenedor, { origenesPermitidos: listaDesdeEnv(process.env.CORS_ORIGIN) });
+  const app = crearApp(contenedor, {
+    origenesPermitidos: listaDesdeEnv(process.env.CORS_ORIGIN),
+    // Para GET /api/salud: le pregunta a MongoDB si está viva
+    verificarBaseDeDatos: () => mongoose.connection.db.admin().ping(),
+  });
   app.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
 };
 

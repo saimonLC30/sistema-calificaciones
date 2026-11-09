@@ -124,6 +124,8 @@ PATCH /api/calificaciones/:id/estado   { "estado": "publicada" }
 ### Estructura de carpetas
 
 ```
+postman/
+└── Sistema-Calificaciones.postman_collection.json   # colección para importar en Postman
 scripts/
 ├── seed.js                     # datos de prueba
 └── probar-api.js               # prueba la API real de punta a punta
@@ -227,6 +229,43 @@ pendiente ──> publicada ──> revisada
 | Ver calificaciones                       | Solo las suyas, publicadas o revisadas | De sus materias | Todas |
 | Gestionar usuarios y roles               | –                 | –                         | ✔     |
 
+## Probar con Postman y ver los datos en MongoDB Compass
+
+### Postman
+
+En `postman/Sistema-Calificaciones.postman_collection.json` está la colección con todas las rutas.
+
+1. En Postman: **Import** → elegí ese archivo.
+2. Con `npm run seed` y `npm run dev` corriendo, abrí la carpeta **1. Login** y ejecutá los tres logins: los tokens se guardan solos en las variables de la colección.
+3. Seguí las carpetas en orden. Cada request guarda los ids que necesita la siguiente (`materiaId`, `alumnaId`, `evaluacionId`, `calificacionId`).
+4. Para probar todo de una vez: clic derecho en la colección → **Run collection**. Cada request tiene tests y muestra ✔ o ✘.
+
+| Carpeta                     | Qué muestra                                                                  |
+|-----------------------------|------------------------------------------------------------------------------|
+| 0. Salud                    | Que la API responde y que MongoDB está conectado (`GET /api/salud`)          |
+| 1. Login                    | Login de cada rol y registro público (siempre crea alumnos)                  |
+| 2. Materias y evaluaciones  | El docente ve sus materias y alumnos, y crea una evaluación                  |
+| 3. Calificaciones           | Cargar → la alumna no la ve → publicar → la ve → corregir → no vuelve a pendiente |
+| 4. Seguridad                | 401, 403, nota fuera de rango e intentos de inyección NoSQL                  |
+| 5. Administración           | Usuarios, roles y materias                                                   |
+
+Si tu API corre en otro puerto, cambiá la variable `baseUrl` de la colección.
+
+### MongoDB Compass
+
+1. Abrí Compass y conectate con la misma URI del `.env`: `mongodb://127.0.0.1:27017`.
+2. Entrá a la base **`calificaciones`** (el nombre que va al final de `MONGO_URI`).
+3. Mongoose guarda cada modelo en una colección con el nombre en plural:
+
+| Modelo         | Colección en Compass | Qué ver                                                     |
+|----------------|----------------------|-------------------------------------------------------------|
+| `User`         | `users`              | La contraseña guardada como hash de bcrypt (`$2a$10$...`)   |
+| `Materia`      | `materias`           | Los arrays `docentes` y `alumnos` con ids                   |
+| `Evaluacion`   | `evaluacions`        | La evaluación que crea Postman en la carpeta 2              |
+| `Calificacion` | `calificacions`      | El `estado` cambiando y el `historial` de cada cambio       |
+
+Para la demo funciona muy bien tener Compass al lado de Postman: publicás una nota en Postman, tocás **Refresh** en Compass y se ve el cambio de estado y la entrada nueva en `historial`.
+
 ## Seguridad
 
 | Medida                                         | Dónde                                         | Qué evita                                                |
@@ -300,6 +339,11 @@ Todas las rutas (salvo registro y login) necesitan el header
 | POST   | `/api/auth/register` | Registra un usuario (rol alumno) |
 | POST   | `/api/auth/login`    | Inicia sesión y devuelve token   |
 | GET    | `/api/auth/me`       | Devuelve el usuario autenticado  |
+
+### Salud
+| Método | Ruta          | Descripción                                           |
+|--------|---------------|-------------------------------------------------------|
+| GET    | `/api/salud`  | ¿La API responde y MongoDB está conectado? (sin token) |
 
 ### Usuarios (solo admin)
 | Método | Ruta                     | Descripción                           |
