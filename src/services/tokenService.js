@@ -1,4 +1,3 @@
-// ─────────────────────────────────────────────────────────────
 // CAPA DE INFRAESTRUCTURA: servicio de tokens JWT.
 // Es una "fábrica": recibe la configuración y devuelve { generar, verificar }.
 // Así los casos de uso no dependen directamente de la librería jsonwebtoken.
